@@ -1,11 +1,11 @@
 import pandas as pd
-import sqlite3 as sqllite
+import sqlite3 as sqlite
 import datetime
 import sys
 
 tableList = ["airport", "casement", "dunlaoghaire", "glasnevin", "merrion", "phoenixpark"]
 fieldList = ["MAXTP", "MINTP", "MAXT", "MINT", "GMIN", "SOIL"]
-db = sqllite.connect("database.db")
+db = sqlite.connect("database.db")
 cur = db.cursor()
 
 mainFrame = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
