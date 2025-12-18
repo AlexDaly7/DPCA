@@ -34,7 +34,7 @@ for file in csvList:
     # Create table if doesnt exist
     if(hasattr(csvFile, "maxtp")):
         cursor.execute(f"""CREATE TABLE IF NOT EXISTS {file}(
-            DATE DATE PRIMARY KEY NOT NULL,
+            DATE TEXT PRIMARY KEY NOT NULL,
             MAXTP DOUBLE,
             MINTP DOUBLE,
             MEANTP DOUBLE,
@@ -44,7 +44,7 @@ for file in csvList:
         );""")
     else:
         cursor.execute(f"""CREATE TABLE IF NOT EXISTS {file}(
-            DATE DATE PRIMARY KEY NOT NULL,
+            DATE TEXT PRIMARY KEY NOT NULL,
             MAXT DOUBLE,
             MINT DOUBLE,
             MEANT DOUBLE,
@@ -61,39 +61,64 @@ for file in csvList:
 
     # Iterate on each row in loaded csv dataframe
     print(f"Iterating on {file}")
+    lastDate = ""
     try:
         for row in csvFile.itertuples():
             day = row.date[0:2]
             month = convertMonth(row.date[3:6])
             year = convertYear(row.date[7:9])
-            dateIn = datetime.date(int(year), int(month), int(day))
+            dateIn = f"{year}-{month}-{day}"
 
-            # Check if temp values are " ", if so set to 0, otherwise pass in value from csv
-            if(hasattr(row, "maxt")):
-                if(row.maxt==" "):
-                    maxt = 0
+            # Ensure no duplicate records are read
+            if(dateIn!=lastDate):
+                # Check if temp values are " ", if so set to 0, otherwise pass in value from csv
+                if(hasattr(row, "maxt")):
+                    if(row.maxt==" "):
+                        maxt = None
+                    else:
+                        maxt=float(row.maxt)
+                    if(row.mint==" "):
+                        mint = None
+                    else:
+                        mint=float(row.mint)
                 else:
-                    maxt=float(row.maxt)
-                if(row.mint==" "):
-                    mint = 0
+                    if(row.maxtp==" "):
+                        maxt = None
+                    else:
+                        maxt=float(row.maxtp)
+                    if(row.mintp==" "):
+                        mint = None
+                    else:
+                        mint=float(row.mintp)
+                if(row.gmin==" "):
+                    gmin = None
                 else:
-                    mint=float(row.mint)
-            else:
-                if(row.maxtp==" "):
-                    maxt = 0
+                    gmin = float(row.gmin)
+                if(row.soil==" "):
+                    soil = None
                 else:
-                    maxt=float(row.maxtp)
-                if(row.mintp==" "):
-                    mint = 0
-                else:
-                    mint=float(row.mintp)
-            if(mint!=0 or maxt!=0):
+                    soil = float(row.soil)
+                
                 if(hasattr(row, "maxtp")):
                     insertSQL = f"""INSERT INTO {file} (DATE,MAXTP,MINTP,MEANTP,DIFFTP,GMIN,SOIL) VALUES (?,?,?,?,?,?,?);"""
                 else:
                     insertSQL = f"""INSERT INTO {file} (DATE,MAXT,MINT,MEANT,DIFFT,GMIN,SOIL) VALUES (?,?,?,?,?,?,?);"""
-                args = (dateIn, maxt, mint, (maxt+mint)/2, maxt-mint, row.gmin, row.soil)
-                cursor.execute(insertSQL, args)
+
+                if(mint!=None and maxt!=None):
+                    args = (dateIn, maxt, mint, round((maxt+mint)/2, 2), round(maxt-mint, 2), gmin, soil)
+                    cursor.execute(insertSQL, args)
+                elif((mint==None) != (maxt==None)):    
+                    args = (dateIn, maxt, mint, None, None, gmin, soil)
+                    cursor.execute(insertSQL, args)
+                                
+                lastDate=dateIn
+
     except Exception as e:
         print("An error has occured while writing dataframe to table: "+str(e))
     db.commit() # Commit changes
+
+
+
+
+
+print("Finished loading data to database")
