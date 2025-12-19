@@ -1,30 +1,11 @@
 import pandas as pd
 import sqlite3 as sqlite
-import datetime
-import sys
 
 tableList = ["airport", "casement", "dunlaoghaire", "glasnevin", "merrion", "phoenixpark"]
-fieldList = ["MAXTP", "MINTP", "MAXT", "MINT", "GMIN", "SOIL"]
 db = sqlite.connect("database.db")
 cur = db.cursor()
 
 mainFrame = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
-
-# Create table
-#createSQL = f"""CREATE TABLE IF NOT EXISTS dublin(
-#            DATE TEXT PRIMARY KEY NOT NULL,
-#            MAXTP DOUBLE,
-#            MINTP DOUBLE,
-#            MEANTP DOUBLE,
-#            DIFFTP DOUBLE,
-#            MAXT DOUBLE,
-#            MINT DOUBLE,
-#            MEANT DOUBLE,
-#            DIFFT DOUBLE,
-#            GMIN DOUBLE,
-#            SOIL DOUBLE
-#        );"""
-#cur.execute(createSQL)
 
 # Create dataframes to columns for aggregation
 maxtp = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
@@ -34,14 +15,8 @@ mint = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
 gmin = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
 soil = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
 dublinAvg = pd.read_sql_query("SELECT DATE FROM airport;", db, "DATE")
-#dublinAvg["DATE"] = dublinAvg.index
 
-def getIndex(date):
-    return mainFrame.index.get_loc(mainFrame[mainFrame['DATE'] == date].index[0])
-    index = (mainFrame.index)
-    return index.astype(int)
-
-for table in tableList:
+for table in tableList: # For each table in db
     tablePD = pd.read_sql_query(f"SELECT * FROM {table};", db, "DATE")
     if("MAXTP" in tablePD.columns):
         maxtp = pd.concat([maxtp, tablePD["MAXTP"]], axis=1)
@@ -52,10 +27,9 @@ for table in tableList:
     gmin = pd.concat([gmin, tablePD["GMIN"]], axis=1)
     soil = pd.concat([soil, tablePD["SOIL"]], axis=1)
 
-#def getAvg(field, table, ):
 casement = pd.read_sql_query("SELECT * FROM casement", db, "DATE")
-print(mint)
 
+# Aggregate fields into one column for Dublin table
 maxtp = maxtp.agg("max", axis="columns").round(2)
 mintp = mintp.agg("min", axis="columns").round(2)
 maxt = maxt.agg("max", axis="columns").round(2)
@@ -70,6 +44,7 @@ meantp = meantp.agg("mean", axis="columns").round(2)
 meant = pd.concat([maxt, mint], axis=1)
 meant = meant.agg("mean", axis="columns").round(2)
 
+# Add columns into Dublin DataFrame
 dublinAvg = pd.concat([dublinAvg, maxtp], axis=1)
 dublinAvg = pd.concat([dublinAvg, mintp], axis=1)
 dublinAvg = pd.concat([dublinAvg, meantp], axis=1)
@@ -81,10 +56,7 @@ dublinAvg["DIFFT"] = maxt - mint
 dublinAvg = pd.concat([dublinAvg, gmin], axis=1)
 dublinAvg = pd.concat([dublinAvg, soil], axis=1)
 dublinAvg.reset_index(drop=True)
+# Name columns
 dublinAvg.columns=["MAXTP","MINTP","MEANTP","DIFFTP","MAXT","MINT","MEANT","DIFFT","GMIN","SOIL"]
-print(dublinAvg)
 
-dublinAvg.to_sql("dublin", db)
-#for row in dublinAvg.itertuples():
-
-#print(pd.concat([mainFrame, casement["MINTP"]], axis=1))
+dublinAvg.to_sql("dublin", db) # DataFrame to database

@@ -116,9 +116,4 @@ for file in csvList:
     except Exception as e:
         print("An error has occured while writing dataframe to table: "+str(e))
     db.commit() # Commit changes
-
-
-
-
-
 print("Finished loading data to database")
