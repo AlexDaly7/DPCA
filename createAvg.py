@@ -27,8 +27,6 @@ for table in tableList: # For each table in db
     gmin = pd.concat([gmin, tablePD["GMIN"]], axis=1)
     soil = pd.concat([soil, tablePD["SOIL"]], axis=1)
 
-casement = pd.read_sql_query("SELECT * FROM casement", db, "DATE")
-
 # Aggregate fields into one column for Dublin table
 maxtp = maxtp.agg("max", axis="columns").round(2)
 mintp = mintp.agg("min", axis="columns").round(2)
@@ -58,5 +56,7 @@ dublinAvg = pd.concat([dublinAvg, soil], axis=1)
 dublinAvg.reset_index(drop=True)
 # Name columns
 dublinAvg.columns=["MAXTP","MINTP","MEANTP","DIFFTP","MAXT","MINT","MEANT","DIFFT","GMIN","SOIL"]
-
-dublinAvg.to_sql("dublin", db) # DataFrame to database
+try:
+    dublinAvg.to_sql("dublin", db) # DataFrame to database
+except:
+    print("The Dublin table already exists")
